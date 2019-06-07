@@ -2,12 +2,87 @@ package main
 
 import (
 	"fmt"
+	"github.com/shirou/gopsutil/cpu"
+	"github.com/shirou/gopsutil/disk"
+	"github.com/shirou/gopsutil/host"
+	"github.com/shirou/gopsutil/load"
+	"github.com/shirou/gopsutil/mem"
+	"github.com/shirou/gopsutil/process"
+	"github.com/shirou/gopsutil/winservices"
 	"math/rand"
+	"net/http"
+	"strings"
 	"sync"
 	"time"
 )
 
 func main() {
+
+	v, _ := mem.VirtualMemory()
+	swap, _ := mem.SwapMemory();
+
+	// almost every return value is a struct
+	fmt.Printf("Total: %v, Free:%v, UsedPercent:%f%%\n", v.Total, v.Free, v.UsedPercent)
+
+	// convert to JSON. String() is also implemented
+	fmt.Println("Memory:")
+	fmt.Println(v)
+
+	fmt.Println("SWAP:")
+	fmt.Println(swap)
+
+	fmt.Println("Host info:")
+	h, _ := host.Info()
+	fmt.Println(h);
+	fmt.Println("CPU Info:")
+	cpuInfo, _ := cpu.Info()
+	fmt.Println(cpuInfo)
+
+	fmt.Println("CPU time")
+	cpuTimes, _ := cpu.Times(true)
+	fmt.Println(cpuTimes)
+
+	fmt.Println("CPU percentage")
+	cpuPercent, _ := cpu.Percent(0, true)
+	fmt.Println(cpuPercent)
+
+	fmt.Println("CPU load")
+	loadAvg, _ := load.Avg()
+	fmt.Println(loadAvg)
+
+	partitions, _ := disk.Partitions(true)
+
+	fmt.Println("All disks:")
+	fmt.Println(partitions)
+
+	for _, partition := range partitions {
+		fmt.Println("Disk Usage:")
+		fmt.Println(disk.Usage(partition.Mountpoint))
+		fmt.Println("IO Counters:")
+		fmt.Println(disk.IOCounters())
+	}
+
+	fmt.Println("Windows Services:")
+	windowsServices, _ := winservices.ListServices()
+	for _, winServices := range windowsServices {
+		fmt.Println(winServices.Name)
+		fmt.Println(winServices.Config)
+		fmt.Println(winServices.Status)
+	}
+
+	fmt.Println("Processes:")
+	pids, _ := process.Pids()
+
+	for pid := range pids {
+		win32Proc, _ := process.GetWin32Proc(int32(pid))
+		fmt.Println(win32Proc)
+	}
+
+	//	http.HandleFunc("/", sayHello)
+	//	if err := http.ListenAndServe(":8080", nil); err != nil {
+	//		panic(err)
+	//  }
+
 	var services [10]*Service
 	var cancelTokens [10]chan bool
 
@@ -26,10 +101,17 @@ func main() {
 	time.Sleep(dur)
 
 	for _, ct := range cancelTokens {
-		ct<-true
+		ct <- true
 	}
 	wg.Wait()
 
 	fmt.Println("Shutdown successful")
 }
 
+func sayHello(w http.ResponseWriter, r *http.Request) {
+	message := r.URL.Path
+	message = strings.TrimPrefix(message, "/")
+	message = "Hello " + message
+
+	w.Write([]byte(message))
+}
