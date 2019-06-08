@@ -18,7 +18,16 @@ go get golang.org/x/sys/windows
 go get github.com/shirou/w32
 ````
 
+
 ## Run
+
+### Linux
+```
+cd .\go\src\github.com\nook24\statusd-go\
+go run main.go
+```
+
+### Windows
 ```
 cd ~/go/src/github.com/nook24/statusd-go
 go run .

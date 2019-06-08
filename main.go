@@ -2,13 +2,14 @@ package main
 
 import (
 	"fmt"
+	"github.com/nook24/statusd-go/processes"
+	"github.com/nook24/statusd-go/service"
+	"github.com/nook24/statusd-go/win32services"
 	"github.com/shirou/gopsutil/cpu"
 	"github.com/shirou/gopsutil/disk"
 	"github.com/shirou/gopsutil/host"
 	"github.com/shirou/gopsutil/load"
 	"github.com/shirou/gopsutil/mem"
-	"github.com/shirou/gopsutil/process"
-	"github.com/shirou/gopsutil/winservices"
 	"math/rand"
 	"net/http"
 	"strings"
@@ -63,34 +64,24 @@ func main() {
 	}
 
 	fmt.Println("Windows Services:")
-	windowsServices, _ := winservices.ListServices()
-	for _, winServices := range windowsServices {
-		fmt.Println(winServices.Name)
-		fmt.Println(winServices.Config)
-		fmt.Println(winServices.Status)
-	}
+	win32services.GetWindowsServices()
 
 	fmt.Println("Processes:")
-	pids, _ := process.Pids()
-
-	for pid := range pids {
-		win32Proc, _ := process.GetWin32Proc(int32(pid))
-		fmt.Println(win32Proc)
-	}
+	processes.GetAllProcesses();
 
 	//	http.HandleFunc("/", sayHello)
 	//	if err := http.ListenAndServe(":8080", nil); err != nil {
 	//		panic(err)
 	//  }
 
-	var services [10]*Service
+	var services [10]*service.Service
 	var cancelTokens [10]chan bool
 
 	wg := new(sync.WaitGroup)
 
 	for i := 0; i < len(services); i++ {
 		cancelTokens[i] = make(chan bool)
-		services[i] = NewService(time.Duration(rand.Int63n(10)+1)*time.Second, fmt.Sprintf("run command %d", i))
+		services[i] = service.NewService(time.Duration(rand.Int63n(10)+1)*time.Second, fmt.Sprintf("run command %d", i))
 	}
 
 	for i, srv := range services {
